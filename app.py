@@ -7,7 +7,6 @@ from datetime import date
 st.set_page_config(page_title="Relatório de Pagamentos", layout="wide")
 
 # Função de conexão
-@st.cache_data(ttl=600)
 def conectar_banco():
     return pyodbc.connect(
         'DRIVER={ODBC Driver 17 for SQL Server};'
