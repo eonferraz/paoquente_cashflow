@@ -65,8 +65,6 @@ df_filtrado = df_completo[
     (df_completo["DATA_INTENCAO"].dt.date <= data_fim)
 ].copy()
 
-st.write("### Contas a Pagar")
-
 if not df_filtrado.empty:
     # Conversão de valores numéricos com vírgula
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
