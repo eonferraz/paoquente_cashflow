@@ -50,9 +50,11 @@ df_completo = buscar_dados()
 # Converter DATA_INTENCAO para datetime
 df_completo["DATA_INTENCAO"] = pd.to_datetime(df_completo["DATA_INTENCAO"], errors="coerce")
 
-# Input do filtro de data
-data_ref = st.date_input("Filtrar por Data de Intenção", value=date.today())
-df_filtrado = df_completo[df_completo["DATA_INTENCAO"].dt.date == data_ref].copy()
+# Input do filtro de intervalo de datas
+data_inicio, data_fim = st.date_input("Filtrar por intervalo de Data de Intenção", [date.today(), date.today()])
+
+# Aplica o filtro localmente
+df_filtrado = df_completo[(df_completo["DATA_INTENCAO"].dt.date >= data_inicio) & (df_completo["DATA_INTENCAO"].dt.date <= data_fim)].copy()
 
 st.write("### Contas a Pagar")
 
@@ -92,4 +94,4 @@ if not df_filtrado.empty:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 else:
-    st.warning("Nenhum registro encontrado para a data selecionada.")
+    st.warning("Nenhum registro encontrado para o intervalo de datas selecionado.")
