@@ -48,11 +48,11 @@ def buscar_dados():
 df_completo = buscar_dados()
 
 # Converter DATA_VENCIMENTO para datetime
-df_completo["DATA_VENCIMENTO"] = pd.to_datetime(df_completo["DATA_VENCIMENTO"], errors="coerce")
+df_completo["DATA_INTENCAO"] = pd.to_datetime(df_completo["DATA_INTENCAO"], errors="coerce")
 
 # Input do filtro de data
 data_ref = st.date_input("Filtrar por Data de Vencimento", value=date.today())
-df_filtrado = df_completo[df_completo["DATA_VENCIMENTO"].dt.date == data_ref]
+df_filtrado = df_completo[df_completo["DATA_INTENCAO"].dt.date == data_ref]
 
 st.write("### Contas a Pagar")
 
