@@ -36,7 +36,7 @@ def buscar_dados():
         FROM pq_lancamentos 
         WHERE DATA_CANCELAMENTO IS NULL
         AND TIPO = 'Contas à Pagar'
-        AND (DATA_PAGAMENTO IS NULL OR DATA_PAGAMENTO = '')
+        AND DATA_PAGAMENTO IS NULL
     """
     df = pd.read_sql(query, conn)
     conn.close()
@@ -45,24 +45,45 @@ def buscar_dados():
 df_completo = buscar_dados()
 df_completo["DATA_INTENCAO"] = pd.to_datetime(df_completo["DATA_INTENCAO"], errors="coerce")
 
-data_inicio, data_fim = st.date_input("Filtrar por intervalo de Data de Intenção", [date.today(), date.today()])
-df_filtrado = df_completo[(df_completo["DATA_INTENCAO"].dt.date >= data_inicio) & (df_completo["DATA_INTENCAO"].dt.date <= data_fim)].copy()
+# Filtros lado a lado
+col1, col2, col3 = st.columns([2, 2, 1])
+with col1:
+    data_inicio, data_fim = st.date_input("Data de Intenção", [date.today(), date.today()])
+with col2:
+    colunas_ordenacao = [
+        'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
+        'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
+        'DATA_INTENCAO', 'VALOR_TOTAL'
+    ]
+    col_ordenacao = st.selectbox("Ordenar por:", colunas_ordenacao)
+with col3:
+    crescente = st.checkbox("⬆️ Crescente", value=True)
+
+# Filtra por intervalo de datas
+df_filtrado = df_completo[
+    (df_completo["DATA_INTENCAO"].dt.date >= data_inicio) &
+    (df_completo["DATA_INTENCAO"].dt.date <= data_fim)
+].copy()
 
 st.write("### Contas a Pagar")
 
 if not df_filtrado.empty:
+    # Conversão de valores numéricos com vírgula
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
         df_filtrado[col] = df_filtrado[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
         df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
 
+    # Cálculo do valor total
     df_filtrado['VALOR_TOTAL'] = (
         df_filtrado['VALOR_NOMINAL'] +
         df_filtrado['VALOR_ENCARGOS'] -
         df_filtrado['VALOR_DESCONTOS']
     )
 
+    # Combinação de parcelas
     df_filtrado['PARCELA_TOTAL'] = df_filtrado['PARCELA'].astype(str) + "/" + df_filtrado['TOTAL_PARCELAS'].astype(str)
 
+    # Seleção de colunas visíveis
     colunas_visiveis = [
         'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
         'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
@@ -72,12 +93,29 @@ if not df_filtrado.empty:
     df_exibir = df_filtrado[colunas_visiveis].copy()
     df_exibir['Selecionar'] = False
 
-    # Filtro de ordenação
-    col_ordenacao = st.selectbox("Ordenar por coluna:", df_exibir.columns.drop("Selecionar"))
-    crescente = st.checkbox("Ordem crescente", value=True)
-    df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente).reset_index(drop=True)
+    # Ordenação
+    df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente)
 
-    st.write("Selecione as linhas desejadas:")
+    # Total e botão acima do DataFrame
+    selecionados = df_exibir[df_exibir['Selecionar'] == True]  # vazio inicialmente
+    total = selecionados['VALOR_TOTAL'].sum()
+
+    colA, colB = st.columns([2, 1])
+    with colA:
+        st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    with colB:
+        if not selecionados.empty:
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
+            st.download_button(
+                label="⬇️ Exportar Selecionados para Excel",
+                data=output.getvalue(),
+                file_name="contas_a_pagar.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+    # Editor com checkboxes
     edited_df = st.data_editor(
         df_exibir,
         use_container_width=True,
@@ -91,19 +129,24 @@ if not df_filtrado.empty:
         disabled=False
     )
 
+    # Recalcular seleção após edição
     selecionados = edited_df[edited_df['Selecionar'] == True]
     total = selecionados['VALOR_TOTAL'].sum()
-    st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
+    # Atualizar total e botão
     if not selecionados.empty:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
-        st.download_button(
-            label="⬇️ Exportar Selecionados para Excel",
-            data=output.getvalue(),
-            file_name="contas_a_pagar.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        colA, colB = st.columns([2, 1])
+        with colA:
+            st.markdown(f"### 💰 Total Atual Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        with colB:
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
+            st.download_button(
+                label="⬇️ Exportar Selecionados Atualizados",
+                data=output.getvalue(),
+                file_name="contas_a_pagar.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 else:
     st.warning("Nenhum registro encontrado para o intervalo de datas selecionado.")
