@@ -36,7 +36,7 @@ def buscar_dados():
         FROM pq_lancamentos 
         WHERE DATA_CANCELAMENTO IS NULL
         AND TIPO = 'Contas à Pagar'
-        AND (DATA_PAGAMENTO IS NULL OR DATA_PAGAMENTO = '')
+        AND DATA_PAGAMENTO IS NULL
     """
     df = pd.read_sql(query, conn)
     conn.close()
@@ -96,24 +96,12 @@ if not df_filtrado.empty:
     # Ordenação
     df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente)
 
-    # Total e botão acima do DataFrame
-    selecionados = df_exibir[df_exibir['Selecionar'] == True]  # vazio inicialmente
-    total = selecionados['VALOR_TOTAL'].sum()
+    # Totais iniciais
+    total_linhas = len(df_exibir)
+    total_selecionados = 0
+    total_valor = 0.0
 
-    colA, colB = st.columns([2, 1])
-    with colA:
-        st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    with colB:
-        if not selecionados.empty:
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
-            st.download_button(
-                label="⬇️ Exportar Selecionados para Excel",
-                data=output.getvalue(),
-                file_name="contas_a_pagar.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+    st.markdown(f"**Total de linhas:** {total_linhas}")
 
     # Editor com checkboxes
     edited_df = st.data_editor(
@@ -129,21 +117,22 @@ if not df_filtrado.empty:
         disabled=False
     )
 
-    # Recalcular seleção após edição
+    # Recalcula seleção
     selecionados = edited_df[edited_df['Selecionar'] == True]
-    total = selecionados['VALOR_TOTAL'].sum()
+    total_selecionados = len(selecionados)
+    total_valor = selecionados['VALOR_TOTAL'].sum()
 
-    # Atualizar total e botão
-    if not selecionados.empty:
-        colA, colB = st.columns([2, 1])
-        with colA:
-            st.markdown(f"### 💰 Total Atual Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        with colB:
+    colA, colB = st.columns([2, 1])
+    with colA:
+        st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        st.markdown(f"**Linhas selecionadas:** {total_selecionados}")
+    with colB:
+        if not selecionados.empty:
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
             st.download_button(
-                label="⬇️ Exportar Selecionados Atualizados",
+                label="⬇️ Exportar Selecionados para Excel",
                 data=output.getvalue(),
                 file_name="contas_a_pagar.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
