@@ -31,7 +31,6 @@ def buscar_dados():
             DATA_LANCAMENTO,
             DATA_VENCIMENTO,
             DATA_INTENCAO,
-            DATA_PAGAMENTO,
             VALOR_NOMINAL,
             VALOR_ENCARGOS,
             VALOR_DESCONTOS
@@ -64,20 +63,33 @@ if not df_filtrado.empty:
         df_filtrado[col] = df_filtrado[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
         df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
 
+    # Calcular VALOR_TOTAL
     df_filtrado['VALOR_TOTAL'] = (
         df_filtrado['VALOR_NOMINAL'] +
         df_filtrado['VALOR_ENCARGOS'] -
         df_filtrado['VALOR_DESCONTOS']
     )
 
-    # Interface com checkboxes por linha na tabela
+    # Criar coluna PARCELA/TOTAL
+    df_filtrado['PARCELA_TOTAL'] = df_filtrado['PARCELA'].astype(str) + "/" + df_filtrado['TOTAL_PARCELAS'].astype(str)
+
+    # Selecionar e reorganizar colunas relevantes
+    colunas_visiveis = [
+        'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
+        'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO', 'DATA_INTENCAO', 'VALOR_TOTAL'
+    ]
+    df_exibir = df_filtrado[colunas_visiveis].copy()
+    df_exibir['Selecionar'] = False
+
+    # Interface com checkboxes integrados
     st.write("Selecione as linhas desejadas:")
-    df_filtrado['Selecionar'] = False
     edited_df = st.data_editor(
-        df_filtrado,
+        df_exibir,
         use_container_width=True,
         num_rows="dynamic",
-        column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")}
+        column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")},
+        hide_index=True,
+        key="data_editor_pagamentos"
     )
 
     selecionados = edited_df[edited_df['Selecionar'] == True]
