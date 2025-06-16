@@ -59,8 +59,9 @@ df_filtrado = df_completo[(df_completo["DATA_INTENCAO"].dt.date >= data_inicio) 
 st.write("### Contas a Pagar")
 
 if not df_filtrado.empty:
-    # Converter valores numéricos para float
+    # Converter valores numéricos de string com vírgula para float
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
+        df_filtrado[col] = df_filtrado[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
         df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
 
     df_filtrado['VALOR_TOTAL'] = (
