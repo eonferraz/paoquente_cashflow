@@ -52,7 +52,7 @@ with col1:
     data_inicio, data_fim = st.date_input("Data de Intenção", [date.today(), date.today()])
 with col2:
     colunas_ordenacao = [
-        'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
+        'UNIDADE', 'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
         'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
         'DATA_INTENCAO', 'VALOR_TOTAL'
     ]
