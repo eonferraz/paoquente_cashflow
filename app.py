@@ -65,8 +65,6 @@ df_filtrado = df_completo[
     (df_completo["DATA_INTENCAO"].dt.date <= data_fim)
 ].copy()
 
-st.write("### Contas a Pagar")
-
 if not df_filtrado.empty:
     # Conversão de valores numéricos com vírgula
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
@@ -96,18 +94,17 @@ if not df_filtrado.empty:
     # Ordenação
     df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente)
 
-    # Totais iniciais
-    total_linhas = len(df_exibir)
-    st.markdown(f"**Total de linhas:** {total_linhas}")
-
     # Botões para selecionar e desmarcar tudo
-    col_a, col_b = st.columns([1, 1])
+    col_a, col_b, col_c = st.columns([1, 1,1])
     with col_a:
         if st.button("✅ Selecionar tudo"):
             df_exibir['Selecionar'] = True
     with col_b:
         if st.button("❌ Desmarcar tudo"):
             df_exibir['Selecionar'] = False
+    with col_c:
+        st.markdown(f"**Total de linhas:** {total_linhas}")
+        total_linhas = len(df_exibir)
 
     # Editor com checkboxes
     edited_df = st.data_editor(
