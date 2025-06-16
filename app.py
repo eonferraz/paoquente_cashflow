@@ -6,7 +6,7 @@ from datetime import date
 
 st.set_page_config(page_title="Relatório de Pagamentos", layout="wide")
 
-# Função de conexão (não deve ser cacheada)
+# Função de conexão (não cachear)
 def conectar_banco():
     return pyodbc.connect(
         'DRIVER={ODBC Driver 17 for SQL Server};'
@@ -16,7 +16,7 @@ def conectar_banco():
         'PWD=Gs!^42j$G0f0^EI#ZjRv'
     )
 
-# Consulta os dados sem filtro de data
+# Busca dados sem filtro de data
 @st.cache_data(ttl=600)
 def buscar_dados():
     conn = conectar_banco()
@@ -44,22 +44,19 @@ def buscar_dados():
     conn.close()
     return df
 
-# Carrega os dados
+# Carregar dados
 df_completo = buscar_dados()
 
-# Converte DATA_VENCIMENTO para datetime
+# Converter DATA_VENCIMENTO para datetime
 df_completo["DATA_VENCIMENTO"] = pd.to_datetime(df_completo["DATA_VENCIMENTO"], errors="coerce")
 
-# Filtro de data pelo usuário
+# Input do filtro de data
 data_ref = st.date_input("Filtrar por Data de Vencimento", value=date.today())
-
-# Aplica o filtro localmente no DataFrame
 df_filtrado = df_completo[df_completo["DATA_VENCIMENTO"].dt.date == data_ref]
 
 st.write("### Contas a Pagar")
 
 if not df_filtrado.empty:
-    # Coluna para checkboxes
     df_filtrado['Selecionado'] = False
     checkboxes = []
 
@@ -73,17 +70,19 @@ if not df_filtrado.empty:
 
     df_filtrado['Selecionado'] = checkboxes
 
-    # Cálculo do valor total a pagar
+    # Converter valores numéricos para float
+    for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
+        df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
+
     df_filtrado['VALOR_TOTAL'] = (
-        df_filtrado['VALOR_NOMINAL'].fillna(0) +
-        df_filtrado['VALOR_ENCARGOS'].fillna(0) -
-        df_filtrado['VALOR_DESCONTOS'].fillna(0)
+        df_filtrado['VALOR_NOMINAL'] +
+        df_filtrado['VALOR_ENCARGOS'] -
+        df_filtrado['VALOR_DESCONTOS']
     )
 
     total = df_filtrado[df_filtrado['Selecionado']]['VALOR_TOTAL'].sum()
     st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
-    # Exportação das selecionadas
     df_exportar = df_filtrado[df_filtrado['Selecionado']].drop(columns=["Selecionado"])
     if not df_exportar.empty:
         output = io.BytesIO()
