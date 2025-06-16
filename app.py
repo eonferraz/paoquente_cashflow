@@ -38,6 +38,7 @@ def buscar_dados():
         WHERE DATA_CANCELAMENTO IS NULL
         AND TIPO = 'Contas à Pagar'
         AND DATA_PAGAMENTO IS NULL
+        ORDER BY RAZAO_SOCIAL ASC
     """
     df = pd.read_sql(query, conn)
     conn.close()
