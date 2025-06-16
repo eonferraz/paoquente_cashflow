@@ -43,7 +43,6 @@ def buscar_dados(data_vencimento):
         WHERE DATA_CANCELAMENTO IS NULL
         AND TIPO = 'Contas à Pagar'
         AND DATA_PAGAMENTO IS NULL
-        AND CAST(DATA_VENCIMENTO AS DATE) = ?
     """
     df = pd.read_sql(query, conn, params=[data_vencimento])
     conn.close()
