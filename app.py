@@ -126,7 +126,7 @@ if not df_filtrado.empty:
 
     colA, colB = st.columns([2, 1])
     with colA:
-        st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        st.markdown(f"### Total a Pagar Selecionado: R$ {total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         st.markdown(f"**Linhas selecionadas:** {total_selecionados}")
     with colB:
         if not selecionados.empty:
