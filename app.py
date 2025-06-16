@@ -6,7 +6,7 @@ from datetime import date
 
 st.set_page_config(page_title="Relatório de Pagamentos", layout="wide")
 
-# Função de conexão (não cachear)
+# Função de conexão
 def conectar_banco():
     return pyodbc.connect(
         'DRIVER={ODBC Driver 17 for SQL Server};'
@@ -16,7 +16,6 @@ def conectar_banco():
         'PWD=Gs!^42j$G0f0^EI#ZjRv'
     )
 
-# Busca dados sem filtro de data
 @st.cache_data(ttl=600)
 def buscar_dados():
     conn = conectar_banco()
@@ -43,54 +42,42 @@ def buscar_dados():
     conn.close()
     return df
 
-# Carregar dados
 df_completo = buscar_dados()
-
-# Converter DATA_INTENCAO para datetime
 df_completo["DATA_INTENCAO"] = pd.to_datetime(df_completo["DATA_INTENCAO"], errors="coerce")
 
-# Input do filtro de intervalo de datas
 data_inicio, data_fim = st.date_input("Filtrar por intervalo de Data de Intenção", [date.today(), date.today()])
-
-# Aplica o filtro localmente
 df_filtrado = df_completo[(df_completo["DATA_INTENCAO"].dt.date >= data_inicio) & (df_completo["DATA_INTENCAO"].dt.date <= data_fim)].copy()
 
 st.write("### Contas a Pagar")
 
 if not df_filtrado.empty:
-    # Converter valores numéricos de string com vírgula para float
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
         df_filtrado[col] = df_filtrado[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
         df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
 
-    # Calcular VALOR_TOTAL
     df_filtrado['VALOR_TOTAL'] = (
         df_filtrado['VALOR_NOMINAL'] +
         df_filtrado['VALOR_ENCARGOS'] -
         df_filtrado['VALOR_DESCONTOS']
     )
 
-    # Criar coluna PARCELA/TOTAL
     df_filtrado['PARCELA_TOTAL'] = df_filtrado['PARCELA'].astype(str) + "/" + df_filtrado['TOTAL_PARCELAS'].astype(str)
 
-    # Selecionar e reorganizar colunas relevantes
     colunas_visiveis = [
         'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
-        'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO', 'DATA_INTENCAO', 'VALOR_TOTAL'
+        'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
+        'DATA_INTENCAO', 'VALOR_TOTAL'
     ]
+
     df_exibir = df_filtrado[colunas_visiveis].copy()
     df_exibir['Selecionar'] = False
 
-    # Interface com checkboxes integrados
+    # Filtro de ordenação
+    col_ordenacao = st.selectbox("Ordenar por coluna:", df_exibir.columns.drop("Selecionar"))
+    crescente = st.checkbox("Ordem crescente", value=True)
+    df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente).reset_index(drop=True)
+
     st.write("Selecione as linhas desejadas:")
-    # edited_df = st.data_editor(
-    #     df_exibir,
-    #     use_container_width=True,
-    #     num_rows="dynamic",
-    #     column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")},
-    #     hide_index=True,
-    #     key="data_editor_pagamentos"
-    # )
     edited_df = st.data_editor(
         df_exibir,
         use_container_width=True,
@@ -100,14 +87,14 @@ if not df_filtrado.empty:
         },
         hide_index=True,
         key="data_editor_pagamentos",
-        column_order=["Selecionar"] + list(df_exibir.columns.drop("Selecionar")),  # define a ordem
-        disabled=False  # permite edição e ordenação
+        column_order=["Selecionar"] + list(df_exibir.columns.drop("Selecionar")),
+        disabled=False
     )
 
     selecionados = edited_df[edited_df['Selecionar'] == True]
     total = selecionados['VALOR_TOTAL'].sum()
     st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    
+
     if not selecionados.empty:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
