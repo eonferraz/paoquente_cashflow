@@ -95,7 +95,7 @@ if not df_filtrado.empty:
     df_exibir = df_exibir.sort_values(by=col_ordenacao, ascending=crescente)
 
     # Botões para selecionar e desmarcar tudo
-    col_a, col_b, col_c = st.columns([1, 1,1])
+    col_a, col_b, col_c = st.columns([1, 1, 1])
     with col_a:
         if st.button("✅ Selecionar tudo"):
             df_exibir['Selecionar'] = True
@@ -103,8 +103,9 @@ if not df_filtrado.empty:
         if st.button("❌ Desmarcar tudo"):
             df_exibir['Selecionar'] = False
     with col_c:
-        st.markdown(f"**Total de linhas:** {total_linhas}")
         total_linhas = len(df_exibir)
+        st.markdown(f"**Total de linhas:** {total_linhas}")
+        
 
     # Editor com checkboxes
     edited_df = st.data_editor(
