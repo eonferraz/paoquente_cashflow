@@ -21,6 +21,7 @@ def buscar_dados():
     conn = conectar_banco()
     query = """
         SELECT 
+            UNIDADE,
             RAZAO_SOCIAL,
             TIPO_DOC,
             CATEGORIA,
@@ -65,6 +66,8 @@ df_filtrado = df_completo[
     (df_completo["DATA_INTENCAO"].dt.date <= data_fim)
 ].copy()
 
+st.write("### Contas a Pagar")
+
 if not df_filtrado.empty:
     # Conversão de valores numéricos com vírgula
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
@@ -83,9 +86,9 @@ if not df_filtrado.empty:
 
     # Seleção de colunas visíveis
     colunas_visiveis = [
-        'RAZAO_SOCIAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
+        'RAZAO_SOCIAL', 'VALOR_TOTAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
         'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
-        'DATA_INTENCAO', 'VALOR_TOTAL'
+        'DATA_INTENCAO'
     ]
 
     df_exibir = df_filtrado[colunas_visiveis].copy()
@@ -126,7 +129,7 @@ if not df_filtrado.empty:
 
     colA, colB = st.columns([2, 1])
     with colA:
-        st.markdown(f"### Total a Pagar Selecionado: R$ {total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         st.markdown(f"**Linhas selecionadas:** {total_selecionados}")
     with colB:
         if not selecionados.empty:
