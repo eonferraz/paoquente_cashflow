@@ -83,19 +83,31 @@ if not df_filtrado.empty:
 
     # Interface com checkboxes integrados
     st.write("Selecione as linhas desejadas:")
+    # edited_df = st.data_editor(
+    #     df_exibir,
+    #     use_container_width=True,
+    #     num_rows="dynamic",
+    #     column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")},
+    #     hide_index=True,
+    #     key="data_editor_pagamentos"
+    # )
     edited_df = st.data_editor(
         df_exibir,
         use_container_width=True,
         num_rows="dynamic",
-        column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")},
+        column_config={
+            "Selecionar": st.column_config.CheckboxColumn(label="Selecionar")
+        },
         hide_index=True,
-        key="data_editor_pagamentos"
+        key="data_editor_pagamentos",
+        column_order=["Selecionar"] + list(df_exibir.columns.drop("Selecionar")),  # define a ordem
+        disabled=False  # permite edição e ordenação
     )
 
     selecionados = edited_df[edited_df['Selecionar'] == True]
     total = selecionados['VALOR_TOTAL'].sum()
     st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-
+    
     if not selecionados.empty:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
