@@ -98,10 +98,16 @@ if not df_filtrado.empty:
 
     # Totais iniciais
     total_linhas = len(df_exibir)
-    total_selecionados = 0
-    total_valor = 0.0
-
     st.markdown(f"**Total de linhas:** {total_linhas}")
+
+    # Botões para selecionar e desmarcar tudo
+    col_a, col_b = st.columns([1, 1])
+    with col_a:
+        if st.button("✅ Selecionar tudo"):
+            df_exibir['Selecionar'] = True
+    with col_b:
+        if st.button("❌ Desmarcar tudo"):
+            df_exibir['Selecionar'] = False
 
     # Editor com checkboxes
     edited_df = st.data_editor(
