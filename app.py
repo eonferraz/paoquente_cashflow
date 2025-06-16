@@ -36,7 +36,7 @@ def buscar_dados():
         FROM pq_lancamentos 
         WHERE DATA_CANCELAMENTO IS NULL
         AND TIPO = 'Contas à Pagar'
-        AND DATA_PAGAMENTO IS NULL
+        AND (DATA_PAGAMENTO IS NULL or DATA_PAGAMENTO = '') 
     """
     df = pd.read_sql(query, conn)
     conn.close()
