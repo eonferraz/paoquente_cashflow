@@ -47,29 +47,16 @@ def buscar_dados():
 # Carregar dados
 df_completo = buscar_dados()
 
-# Converter DATA_VENCIMENTO para datetime
+# Converter DATA_INTENCAO para datetime
 df_completo["DATA_INTENCAO"] = pd.to_datetime(df_completo["DATA_INTENCAO"], errors="coerce")
 
 # Input do filtro de data
-data_ref = st.date_input("Filtrar por Data de Vencimento", value=date.today())
-df_filtrado = df_completo[df_completo["DATA_INTENCAO"].dt.date == data_ref]
+data_ref = st.date_input("Filtrar por Data de Intenção", value=date.today())
+df_filtrado = df_completo[df_completo["DATA_INTENCAO"].dt.date == data_ref].copy()
 
 st.write("### Contas a Pagar")
 
 if not df_filtrado.empty:
-    df_filtrado['Selecionado'] = False
-    checkboxes = []
-
-    for i in range(len(df_filtrado)):
-        col1, col2 = st.columns([0.05, 0.95])
-        with col1:
-            check = st.checkbox("", key=f"check_{i}")
-            checkboxes.append(check)
-        with col2:
-            st.write(df_filtrado.iloc[i, :-1].to_frame().T)
-
-    df_filtrado['Selecionado'] = checkboxes
-
     # Converter valores numéricos para float
     for col in ['VALOR_NOMINAL', 'VALOR_ENCARGOS', 'VALOR_DESCONTOS']:
         df_filtrado[col] = pd.to_numeric(df_filtrado[col], errors='coerce').fillna(0)
@@ -80,14 +67,24 @@ if not df_filtrado.empty:
         df_filtrado['VALOR_DESCONTOS']
     )
 
-    total = df_filtrado[df_filtrado['Selecionado']]['VALOR_TOTAL'].sum()
+    # Interface com checkboxes por linha na tabela
+    st.write("Selecione as linhas desejadas:")
+    df_filtrado['Selecionar'] = False
+    edited_df = st.data_editor(
+        df_filtrado,
+        use_container_width=True,
+        num_rows="dynamic",
+        column_config={"Selecionar": st.column_config.CheckboxColumn(label="Selecionar")}
+    )
+
+    selecionados = edited_df[edited_df['Selecionar'] == True]
+    total = selecionados['VALOR_TOTAL'].sum()
     st.markdown(f"### 💰 Total a Pagar Selecionado: R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
-    df_exportar = df_filtrado[df_filtrado['Selecionado']].drop(columns=["Selecionado"])
-    if not df_exportar.empty:
+    if not selecionados.empty:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_exportar.to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
+            selecionados.drop(columns=["Selecionar"]).to_excel(writer, index=False, sheet_name="Contas_a_Pagar")
         st.download_button(
             label="⬇️ Exportar Selecionados para Excel",
             data=output.getvalue(),
