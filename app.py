@@ -86,7 +86,7 @@ if not df_filtrado.empty:
 
     # Seleção de colunas visíveis
     colunas_visiveis = [
-        'RAZAO_SOCIAL', 'VALOR_TOTAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
+        'UNIDADE', 'RAZAO_SOCIAL', 'VALOR_TOTAL', 'TIPO_DOC', 'CATEGORIA', 'DESCRICAO',
         'PARCELA_TOTAL', 'DATA_LANCAMENTO', 'DATA_VENCIMENTO',
         'DATA_INTENCAO'
     ]
